@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 from collections import Counter
+import base64
 
 st.title("Zoom Chat Log Parser")
 
