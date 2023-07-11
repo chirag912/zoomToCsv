@@ -22,7 +22,7 @@ if uploaded_file is not None:
 
         # Remove timestamps
         df['Response'] = df['Response'].str.replace(r"\d{2}:\d{2}:\d{2}", "", regex=True).str.lower().str.strip()
-         responses = df['Response'].tolist()
+        responses = df['Response'].tolist()
         counter = Counter(responses)
         most_common_responses = [resp for resp, freq in counter.most_common(3)]
 
