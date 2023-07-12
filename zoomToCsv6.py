@@ -70,6 +70,13 @@ if uploaded_file_chat is not None:
                     st.write("Updated Mother Document:")
                     st.dataframe(mother_doc)
 
+            # Search functionality
+            search_term = st.text_input("Enter to search in the Mother Document:")
+            search_button = st.button("Search")
+            if search_button:
+                search_df = mother_doc[mother_doc[column_name].str.contains(search_term, case=False)]
+                st.dataframe(search_df)
+
         response_csv_export = st.sidebar.button("Response List CSV")
         if response_csv_export:
             csv = df_chat_filtered.to_csv(index=False)
