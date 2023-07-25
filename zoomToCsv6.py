@@ -14,12 +14,19 @@ def parse_zoom_chat(chat):
     matches = re.findall(pattern, chat, re.DOTALL)
     return [(name.strip(), response.strip()) for name, response in matches]
 
+def get_csv_download_link(df, mentor_name):
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  
+    href = f'<a href="data:file/csv;base64,{b64}" download="{mentor_name}_list.csv">Download {mentor_name} List</a>'
+    return href
+
 if uploaded_file_chat is not None:
     content = uploaded_file_chat.read().decode()
     matches = parse_zoom_chat(content)
 
     if matches:
         df_chat = pd.DataFrame(matches, columns=["Name", "Response"])
+        df_chat['Name'] = df_chat['Name'].str.lower()
         df_chat['Response'] = df_chat['Response'].str.replace(r"\d{2}:\d{2}:\d{2}", "", regex=True).str.lower().str.strip()
 
         responses = df_chat['Response'].tolist()
@@ -48,6 +55,7 @@ if uploaded_file_chat is not None:
                 mother_doc = pd.read_csv(uploaded_file_mother)
 
             column_name = st.sidebar.selectbox("Select the column to compare with:", mother_doc.columns)
+            mother_doc[column_name] = mother_doc[column_name].str.lower()
 
             merged_df = pd.merge(df_chat_filtered, mother_doc, how="inner", left_on="Name", right_on=column_name)
 
@@ -56,6 +64,11 @@ if uploaded_file_chat is not None:
             else:
                 st.write("Matches found in Mother Document:")
                 st.dataframe(merged_df)
+
+                mentors = merged_df['Mentor'].unique()
+                for mentor in mentors:
+                    mentor_df = merged_df[merged_df['Mentor'] == mentor]
+                    st.markdown(get_csv_download_link(mentor_df, mentor), unsafe_allow_html=True)
 
             unmatched_df = pd.merge(df_chat_filtered, mother_doc, how='outer', indicator=True)
             unmatched_df = unmatched_df[unmatched_df['_merge'] == 'left_only'][['Name', 'Response']]
@@ -69,29 +82,6 @@ if uploaded_file_chat is not None:
                     mother_doc = pd.concat([mother_doc, unmatched_df], ignore_index=True)
                     st.write("Updated Mother Document:")
                     st.dataframe(mother_doc)
-
-            # Search functionality
-            search_term = st.text_input("Enter to search in the Mother Document:")
-            search_button = st.button("Search")
-            if search_button:
-                search_df = mother_doc[mother_doc[column_name].str.contains(search_term, case=False)]
-                st.dataframe(search_df)
-
-        response_csv_export = st.sidebar.button("Response List CSV")
-        if response_csv_export:
-            csv = df_chat_filtered.to_csv(index=False)
-            b64 = base64.b64encode(csv.encode()).decode()  
-            href = f'<a href="data:file/csv;base64,{b64}" download="zoom_chat.csv">Download Response List CSV</a>'
-            st.sidebar.markdown(href, unsafe_allow_html=True)
-
-        if 'mother_doc' in locals():
-            mother_doc_csv_export = st.sidebar.button("Download Updated Mother Doc")
-            if mother_doc_csv_export:
-                csv = mother_doc.to_csv(index=False)
-                b64 = base64.b64encode(csv.encode()).decode()  
-                href = f'<a href="data:file/csv;base64,{b64}" download="updated_mother_doc.csv">Download Updated Mother Document</a>'
-                st.sidebar.markdown(href, unsafe_allow_html=True)
-
     else:
         st.write("No matches found.")
 else:
